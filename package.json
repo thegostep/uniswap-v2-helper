@@ -1,6 +1,6 @@
 {
   "name": "uniswap-v2-helper",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Uniswap trades in a single function call.",
   "main": "./src/index.js",
   "homepage": "https://github.com/thegostep/uniswap-v2-helper",
