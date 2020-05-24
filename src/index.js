@@ -33,7 +33,7 @@ async function swapTokens({
   inputTokenAddress = ethers.utils.getAddress(inputTokenAddress);
   outputTokenAddress = ethers.utils.getAddress(outputTokenAddress);
 
-  maxSlippage = new Percent(maxSlippage);
+  maxSlippage = new Percent(maxSlippage, "100");
 
   const isExactOutput = !!outputAmount;
   amount = isExactOutput
