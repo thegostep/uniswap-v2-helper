@@ -1,6 +1,6 @@
 {
   "name": "uniswap-v2-helper",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "./src/index.js",
   "repository": "git@github.com:thegostep/uniswap-v2-helper.git",
   "author": "thegostep <thegostep@gmail.com>",
