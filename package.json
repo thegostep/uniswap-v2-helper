@@ -1,0 +1,12 @@
+{
+  "name": "uniswap-v2-helper",
+  "version": "0.1.1",
+  "main": "./src/index.js",
+  "repository": "git@github.com:thegostep/uniswap-v2-helper.git",
+  "author": "thegostep <thegostep@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@uniswap/sdk": "^2.0.5",
+    "ethers": "^4.0.47"
+  }
+}
