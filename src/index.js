@@ -19,6 +19,7 @@ async function swapTokens({
   ethersSigner,
   recipientAddress,
   outputAmount,
+  inputAmount,
   inputTokenAddress,
   outputTokenAddress,
   inputTokenDecimals = 18,
@@ -31,8 +32,13 @@ async function swapTokens({
   recipientAddress = ethers.utils.getAddress(recipientAddress);
   inputTokenAddress = ethers.utils.getAddress(inputTokenAddress);
   outputTokenAddress = ethers.utils.getAddress(outputTokenAddress);
-  outputAmount = ethers.utils.parseUnits(outputAmount, outputTokenDecimals);
+
   maxSlippage = new Percent(maxSlippage);
+
+  const isExactOutput = !!outputAmount;
+  amount = isExactOutput
+    ? ethers.utils.parseUnits(outputAmount, outputTokenDecimals)
+    : ethers.utils.parseUnits(inputAmount, inputTokenDecimals);
 
   const UniswapRouterContract = new ethers.Contract(
     "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a",
@@ -84,68 +90,131 @@ async function swapTokens({
 
   const UniswapRoute = new Route([UniswapPair], UniswapInputToken);
 
-  const ExactOutputAmount = new TokenAmount(UniswapOutputToken, outputAmount);
-  const ExactOutputAmountFormatted = ethers.utils.parseUnits(
-    ExactOutputAmount.toFixed(),
-    outputTokenDecimals
-  );
+  if (isExactOutput) {
+    const ExactOutputAmount = new TokenAmount(UniswapOutputToken, amount);
+    const ExactOutputAmountFormatted = ethers.utils.parseUnits(
+      ExactOutputAmount.toFixed(),
+      outputTokenDecimals
+    );
 
-  const UniswapTrade = new Trade(
-    UniswapRoute,
-    ExactOutputAmount,
-    TradeType.EXACT_OUTPUT
-  );
+    const UniswapTrade = new Trade(
+      UniswapRoute,
+      ExactOutputAmount,
+      TradeType.EXACT_OUTPUT
+    );
 
-  const MaxInputAmount = await UniswapTrade.maximumAmountIn(maxSlippage);
-  const MaxInputAmountFormatted = ethers.utils.parseUnits(
-    MaxInputAmount.toFixed(),
-    inputTokenDecimals
-  );
+    const MaxInputAmount = await UniswapTrade.maximumAmountIn(maxSlippage);
+    const MaxInputAmountFormatted = ethers.utils.parseUnits(
+      MaxInputAmount.toFixed(),
+      inputTokenDecimals
+    );
+    const currentTimestamp = (await provider.getBlock()).timestamp;
+    const deadline = currentTimestamp + maxDelay;
 
-  const currentTimestamp = (await provider.getBlock()).timestamp;
-  const deadline = currentTimestamp + maxDelay;
+    const InputTokenContract = new ethers.Contract(
+      inputTokenAddress,
+      IUniswapV2ERC20.abi,
+      ethersSigner
+    );
 
-  const InputTokenContract = new ethers.Contract(
-    inputTokenAddress,
-    IUniswapV2ERC20.abi,
-    ethersSigner
-  );
+    const InputTokenBalance = await InputTokenContract.balanceOf(
+      ethersSigner.getAddress()
+    );
 
-  const InputTokenBalance = await InputTokenContract.balanceOf(
-    ethersSigner.getAddress()
-  );
+    if (InputTokenBalance.lt(MaxInputAmountFormatted)) {
+      throw new Error("insufficient balance");
+    }
 
-  if (InputTokenBalance.lt(MaxInputAmountFormatted)) {
-    throw new Error("insufficient balance");
-  }
+    const allowance = await InputTokenContract.allowance(
+      ethersSigner.getAddress(),
+      UniswapRouterContract.address
+    );
 
-  const allowance = await InputTokenContract.allowance(
-    ethersSigner.getAddress(),
-    UniswapRouterContract.address
-  );
+    if (allowance.lt(MaxInputAmountFormatted)) {
+      const approveTx = await (
+        await InputTokenContract.approve(
+          UniswapRouterContract.address,
+          MaxInputAmountFormatted
+        )
+      ).wait();
+    }
 
-  if (allowance.lt(MaxInputAmountFormatted)) {
-    const approveTx = await (
-      await InputTokenContract.approve(
-        UniswapRouterContract.address,
-        MaxInputAmountFormatted
+    const RouteArray = UniswapRoute.path.map(token => token.address);
+
+    const swapTx = await (
+      await UniswapRouterContract.swapTokensForExactTokens(
+        ExactOutputAmountFormatted,
+        MaxInputAmountFormatted,
+        RouteArray,
+        recipientAddress,
+        deadline
       )
     ).wait();
+
+    return swapTx;
+  } else {
+    const ExactInputAmount = new TokenAmount(UniswapInputToken, amount);
+    const ExactInputAmountFormatted = ethers.utils.parseUnits(
+      ExactInputAmount.toFixed(),
+      outputTokenDecimals
+    );
+
+    const UniswapTrade = new Trade(
+      UniswapRoute,
+      ExactInputAmount,
+      TradeType.EXACT_INPUT
+    );
+
+    const MinOutputAmount = await UniswapTrade.minimumAmountOut(maxSlippage);
+    const MinOutputAmountFormatted = ethers.utils.parseUnits(
+      MinOutputAmount.toFixed(),
+      inputTokenDecimals
+    );
+    const currentTimestamp = (await provider.getBlock()).timestamp;
+    const deadline = currentTimestamp + maxDelay;
+
+    const InputTokenContract = new ethers.Contract(
+      inputTokenAddress,
+      IUniswapV2ERC20.abi,
+      ethersSigner
+    );
+
+    const InputTokenBalance = await InputTokenContract.balanceOf(
+      ethersSigner.getAddress()
+    );
+
+    if (InputTokenBalance.lt(ExactInputAmountFormatted)) {
+      throw new Error("insufficient balance");
+    }
+
+    const allowance = await InputTokenContract.allowance(
+      ethersSigner.getAddress(),
+      UniswapRouterContract.address
+    );
+
+    if (allowance.lt(ExactInputAmountFormatted)) {
+      const approveTx = await (
+        await InputTokenContract.approve(
+          UniswapRouterContract.address,
+          ExactInputAmountFormatted
+        )
+      ).wait();
+    }
+
+    const RouteArray = UniswapRoute.path.map(token => token.address);
+
+    const swapTx = await (
+      await UniswapRouterContract.swapExactTokensForTokens(
+        ExactInputAmountFormatted,
+        MinOutputAmountFormatted,
+        RouteArray,
+        recipientAddress,
+        deadline
+      )
+    ).wait();
+
+    return swapTx;
   }
-
-  const RouteArray = UniswapRoute.path.map(token => token.address);
-
-  const swapTx = await (
-    await UniswapRouterContract.swapTokensForExactTokens(
-      ExactOutputAmountFormatted,
-      MaxInputAmountFormatted,
-      RouteArray,
-      recipientAddress,
-      deadline
-    )
-  ).wait();
-
-  return swapTx;
 }
 
 module.exports = {
