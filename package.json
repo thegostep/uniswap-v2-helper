@@ -1,7 +1,9 @@
 {
   "name": "uniswap-v2-helper",
   "version": "0.1.5",
+  "description": "Uniswap trades in a single function call.",
   "main": "./src/index.js",
+  "homepage": "https://github.com/thegostep/uniswap-v2-helper",
   "repository": "git@github.com:thegostep/uniswap-v2-helper.git",
   "author": "thegostep <thegostep@gmail.com>",
   "license": "MIT",
