@@ -19,7 +19,7 @@ const signer = new ethers.Wallet(privateKey, provider);
 
 // get swap params
 
-const { amountIn, amountOut, path, deadline } = await swapTokens({
+const { amountIn, amountOut, path, deadline } = await getSwapParams({
   networkName: "mainnet",
   inputToken: "0x...",
   inputAmount: "1", // specify input amount to make an exact sell
