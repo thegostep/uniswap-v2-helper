@@ -1,42 +1,37 @@
 # Uniswap V2 Helper
 
-Uniswap trades in a single function call.
+Uniswap trades in a single function call. Currently only supports direct erc20 token pairs with a decimals getter. Single outside dependency on ethers.js.
 
 ## Usage
 
 ```js
-import { swapTokens } from "uniswap-v2-helper";
+import { getSwapParams, swapTokens } from "uniswap-v2-helper";
 import { ethers } from "ethers";
 
 const privateKey = "0x...";
 const provider = ethers.getDefaultProvider();
 const signer = new ethers.Wallet(privateKey, provider);
 
-// swap with exact output
+// get swap params
 
-const receipt = await swapTokens({
-  ethersSigner: signer,
-  recipientAddress: "0x...",
-  outputAmount: "1",
-  inputTokenAddress: "0x...",
-  outputTokenAddress: "0x...",
-  inputTokenDecimals: 18, // default to 18
-  outputTokenDecimals: 18, // default to 18
-  maxSlippage: 5, // default to 5
-  maxDelay: 60 * 2 // default to 2 minutes
+const { amountIn, amountOut, path, deadline } = await swapTokens({
+  networkName: 'mainnet,
+  inputToken: "0x...",
+  inputAmount: "1", // specify input amount to make an exact sell
+  outputToken: "0x...",
+  maxSlippage: 100, // optional default to 100 basis points
+  maxDelay: 60 * 2 // optional default to 2 minutes
 });
 
-// swap with exact input
+// perform swap with exact output
 
 const receipt = await swapTokens({
   ethersSigner: signer,
-  recipientAddress: "0x...",
-  inputAmount: "1",
-  inputTokenAddress: "0x...",
-  outputTokenAddress: "0x...",
-  inputTokenDecimals: 18, // default to 18
-  outputTokenDecimals: 18, // default to 18
-  maxSlippage: 5, // default to 5
-  maxDelay: 60 * 2 // default to 2 minutes
+  recipient: "0x...",
+  inputToken: "0x...",
+  outputToken: "0x...",
+  outputAmount: "1", // specify input amount to make an exact buy
+  maxSlippage: 100, // optional default to 100 basis points
+  maxDelay: 60 * 2 // optional default to 2 minutes
 });
 ```
