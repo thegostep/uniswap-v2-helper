@@ -28,7 +28,7 @@ async function getSwapParams({
   outputToken,
   outputAmount,
   maxSlippage = 100,
-  maxDelay = 60 * 2
+  maxDelay = 60 * 2,
 }) {
   // make sure only one exact amount
   if (inputAmount && outputAmount) {
@@ -81,21 +81,21 @@ async function getSwapParams({
 
   const safetyAmount = inputAmount
     ? expectedAmount.mul(
-        ethers.utils
-          .bigNumberify(1)
-          .sub(ethers.utils.bigNumberify(maxSlippage).div(10000))
+        ethers.BigNumber.from(1).sub(
+          ethers.BigNumber.from(maxSlippage).div(10000)
+        )
       )
     : expectedAmount.mul(
-        ethers.utils
-          .bigNumberify(1)
-          .add(ethers.utils.bigNumberify(maxSlippage).div(10000))
+        ethers.BigNumber.from(1).add(
+          ethers.BigNumber.from(maxSlippage).div(10000)
+        )
       );
 
   const params = {
     amountIn: inputAmount ? inputAmount : safetyAmount,
     amountOut: inputAmount ? safetyAmount : outputAmount,
     path,
-    deadline
+    deadline,
   };
 
   // return swap params
@@ -128,7 +128,7 @@ async function swapTokens({
   outputToken,
   outputAmount,
   maxSlippage = 100,
-  maxDelay = 60 * 2
+  maxDelay = 60 * 2,
 }) {
   // make sure only one exact amount
   if (inputAmount && outputAmount) {
@@ -146,7 +146,7 @@ async function swapTokens({
     outputToken,
     outputAmount,
     maxSlippage,
-    maxDelay
+    maxDelay,
   });
 
   // format addresses
@@ -204,5 +204,5 @@ async function swapTokens({
 module.exports = {
   UniswapRouterAddress,
   getSwapParams,
-  swapTokens
+  swapTokens,
 };
