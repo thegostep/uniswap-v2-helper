@@ -4,8 +4,8 @@ import * as IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import * as IUniswapV2Router from '@uniswap/v2-periphery/build/IUniswapV2Router02.json'
 import * as IUniswapV2Pair from '@uniswap/v2-periphery/build/IUniswapV2Pair.json'
 import * as IUniswapV2Factory from '@uniswap/v2-periphery/build/IUniswapV2Factory.json'
+import { Decimal } from 'decimal.js'
 
-// @thegostep TODO: #2 add support for routerV2
 export const UniswapRouterAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
 
 // @thegostep todo: #5 add documentation on default slippage and delay
@@ -77,12 +77,16 @@ export async function getSwapParams(
     provider,
   )
 
+  // get decimals
+  const inputDecimals = await InputToken.decimals()
+  const outputDecimals = await OutputToken.decimals()
+
   // format amount
   let inputAmount, outputAmount
   if (exactInput) {
-    inputAmount = ethers.utils.parseUnits(amount, await InputToken.decimals())
+    inputAmount = ethers.utils.parseUnits(amount, inputDecimals)
   } else {
-    outputAmount = ethers.utils.parseUnits(amount, await OutputToken.decimals())
+    outputAmount = ethers.utils.parseUnits(amount, outputDecimals)
   }
 
   // set path
@@ -142,9 +146,11 @@ export async function getSwapParams(
     ? inputUnit.mul(reserve1Post).div(reserve0Post)
     : inputUnit.mul(reserve0Post).div(reserve1Post)
 
-  const expectedSlippage = outputPerInputQuotePost
-    .sub(outputPerInputQuotePre)
-    .div(outputPerInputQuotePre)
+  const expectedSlippage = new Decimal(
+    ethers.utils.formatUnits(outputPerInputQuotePost, outputDecimals),
+  )
+    .sub(ethers.utils.formatUnits(outputPerInputQuotePre, outputDecimals))
+    .div(ethers.utils.formatUnits(outputPerInputQuotePre, outputDecimals))
     .mul(100)
     .toString()
 
