@@ -3,7 +3,11 @@ import { TransactionReceipt } from '@ethersproject/providers'
 import * as IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import * as IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
 
+// @thegostep TODO: #2 add support for routerV2
 export const UniswapRouterAddress = '0xf164fC0Ec4E93095b804a4795bBe1e041497b92a'
+
+// @thegostep todo: #4 add getter for expected slippage
+// @thegostep todo: #5 add documentation on default slippage and delay
 
 /**
  * Get parameters to perform a direct swap between two tokens.
