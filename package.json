@@ -1,19 +1,49 @@
 {
   "name": "uniswap-v2-helper",
-  "version": "0.3.1",
   "description": "Uniswap trades in a single function call.",
-  "main": "./src/index.js",
+  "author": "thegostep <thegostep@gmail.com>",
+  "version": "1.0.0",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "homepage": "https://github.com/thegostep/uniswap-v2-helper",
   "repository": "git@github.com:thegostep/uniswap-v2-helper.git",
-  "author": "thegostep <thegostep@gmail.com>",
-  "license": "MIT",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=10"
+  },
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test",
+    "lint": "tsdx lint",
+    "prepare": "tsdx build"
+  },
+  "peerDependencies": {},
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsdx lint"
+    }
+  },
+  "prettier": {
+    "semi": false,
+    "trailingComma": "all",
+    "singleQuote": true,
+    "printWidth": 80
+  },
+  "module": "dist/uniswap-v2-helper.esm.js",
+  "devDependencies": {
+    "husky": "^4.2.5",
+    "tsdx": "^0.13.3",
+    "tslib": "^2.0.1",
+    "typescript": "^4.0.2"
+  },
   "dependencies": {
     "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.0.0-beta.0",
-    "ethers": "^5.0.2"
-  },
-  "devDependencies": {
-    "dotenv": "^8.2.0",
-    "mocha": "^7.2.0"
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "ethers": "^5.0.8"
   }
 }
