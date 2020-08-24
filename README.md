@@ -9,7 +9,7 @@ Uniswap trades in a single function call. Currently only supports direct erc20 t
 
 ## Usage
 
-```js
+```ts
 import { getSwapParams, swapTokens } from "uniswap-v2-helper";
 import { ethers } from "ethers";
 
@@ -19,24 +19,26 @@ const signer = new ethers.Wallet(privateKey, provider);
 
 // get swap params
 
-const { amountIn, amountOut, path, deadline } = await getSwapParams({
+const { amountIn, amountOut, expectedAmount, expectedSlippage, path, deadline } = await getSwapParams(
   networkName: "mainnet",
   inputToken: "0x...",
-  inputAmount: "1", // specify input amount to make an exact sell
   outputToken: "0x...",
+  amount: "1",
+  isSellOrder: true, // true if sell order, false if buy order.
   maxSlippage: 100, // optional default to 100 basis points
   maxDelay: 60 * 2 // optional default to 2 minutes
-});
+);
 
 // perform swap with exact output
 
-const receipt = await swapTokens({
+const receipt = await swapTokens(
   ethersSigner: signer,
   recipient: "0x...",
   inputToken: "0x...",
   outputToken: "0x...",
-  outputAmount: "1", // specify input amount to make an exact buy
+  amount: "1",
+  isSellOrder: true, // true if sell order, false if buy order.
   maxSlippage: 100, // optional default to 100 basis points
   maxDelay: 60 * 2 // optional default to 2 minutes
-});
+);
 ```
