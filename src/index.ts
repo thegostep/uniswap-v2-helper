@@ -1,13 +1,15 @@
 import { Signer, ethers } from 'ethers'
 import { TransactionReceipt } from '@ethersproject/providers'
 import * as IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
-import * as IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
+import * as IUniswapV2Router from '@uniswap/v2-periphery/build/IUniswapV2Router02.json'
+import * as IUniswapV2Pair from '@uniswap/v2-periphery/build/IUniswapV2Pair.json'
+import * as IUniswapV2Factory from '@uniswap/v2-periphery/build/IUniswapV2Factory.json.json'
 
 // @thegostep TODO: #2 add support for routerV2
-export const UniswapRouterAddress = '0xf164fC0Ec4E93095b804a4795bBe1e041497b92a'
+export const UniswapRouterAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
 
-// @thegostep todo: #4 add getter for expected slippage
 // @thegostep todo: #5 add documentation on default slippage and delay
+// @thegostep todo: #6 add support for multiple token path
 
 /**
  * Get parameters to perform a direct swap between two tokens.
@@ -36,6 +38,8 @@ export async function getSwapParams(
 ): Promise<{
   amountIn: string
   amountOut: string
+  expectedAmount: string
+  expectedSlippage: string
   path: string[]
   deadline: number
 }> {
@@ -59,7 +63,17 @@ export async function getSwapParams(
   )
   const UniswapRouter = new ethers.Contract(
     UniswapRouterAddress,
-    IUniswapV2Router01.abi,
+    IUniswapV2Router.abi,
+    provider,
+  )
+  const Factory = new ethers.Contract(
+    await UniswapRouter.factory(),
+    IUniswapV2Factory.abi,
+    provider,
+  )
+  const Pair = new ethers.Contract(
+    await Factory.getPair(InputToken.address, OutputToken.address),
+    IUniswapV2Pair.abi,
     provider,
   )
 
@@ -78,11 +92,12 @@ export async function getSwapParams(
   const currentTimestamp = (await provider.getBlock('latest')).timestamp
   const deadline = currentTimestamp + maxDelay
 
-  // set safety amount
+  // get expected amount
   const expectedAmount = exactInput
     ? (await UniswapRouter.getAmountsOut(inputAmount, path))[1]
     : (await UniswapRouter.getAmountsIn(outputAmount, path))[0]
 
+  // set safety amount
   const safetyAmount = exactInput
     ? expectedAmount.mul(
         ethers.BigNumber.from(1).sub(
@@ -95,9 +110,49 @@ export async function getSwapParams(
         ),
       )
 
+  // get token order
+  const inputIs0 = (await Pair.token0()) === InputToken.address
+
+  // get quotes
+  const { reserve0, reserve1 } = await Pair.getReserves()
+  const inputUnit = ethers.utils.parseUnits('1', await InputToken.decimals())
+  const outputPerInputQuotePre = inputIs0
+    ? inputUnit.mul(reserve1).div(reserve0)
+    : inputUnit.mul(reserve0).div(reserve1)
+
+  let reserve0Post
+  let reserve1Post
+  if (exactInput) {
+    reserve0Post = inputIs0
+      ? reserve0.add(inputAmount)
+      : reserve0.sub(expectedAmount)
+    reserve1Post = inputIs0
+      ? reserve1.sub(expectedAmount)
+      : reserve1.add(inputAmount)
+  } else {
+    reserve0Post = inputIs0
+      ? reserve0.add(inputAmount)
+      : reserve0.sub(expectedAmount)
+    reserve1Post = inputIs0
+      ? reserve1.sub(expectedAmount)
+      : reserve1.add(inputAmount)
+  }
+
+  const outputPerInputQuotePost = inputIs0
+    ? inputUnit.mul(reserve1Post).div(reserve0Post)
+    : inputUnit.mul(reserve0Post).div(reserve1Post)
+
+  const expectedSlippage = outputPerInputQuotePost
+    .sub(outputPerInputQuotePre)
+    .div(outputPerInputQuotePre)
+    .mul(100)
+    .toString()
+
   const params = {
     amountIn: exactInput ? inputAmount : safetyAmount,
     amountOut: exactInput ? safetyAmount : outputAmount,
+    expectedAmount,
+    expectedSlippage,
     path,
     deadline,
   }
@@ -158,7 +213,7 @@ export async function swapTokens(
   )
   const UniswapRouter = new ethers.Contract(
     UniswapRouterAddress,
-    IUniswapV2Router01.abi,
+    IUniswapV2Router.abi,
     ethersSigner,
   )
 
