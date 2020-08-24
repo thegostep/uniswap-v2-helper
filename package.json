@@ -2,7 +2,7 @@
   "name": "uniswap-v2-helper",
   "description": "Uniswap trades in a single function call.",
   "author": "thegostep <thegostep@gmail.com>",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
