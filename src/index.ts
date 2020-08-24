@@ -3,7 +3,7 @@ import { TransactionReceipt } from '@ethersproject/providers'
 import * as IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import * as IUniswapV2Router from '@uniswap/v2-periphery/build/IUniswapV2Router02.json'
 import * as IUniswapV2Pair from '@uniswap/v2-periphery/build/IUniswapV2Pair.json'
-import * as IUniswapV2Factory from '@uniswap/v2-periphery/build/IUniswapV2Factory.json.json'
+import * as IUniswapV2Factory from '@uniswap/v2-periphery/build/IUniswapV2Factory.json'
 
 // @thegostep TODO: #2 add support for routerV2
 export const UniswapRouterAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
