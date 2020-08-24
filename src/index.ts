@@ -1,4 +1,5 @@
 import { Signer, ethers } from 'ethers'
+import { TransactionReceipt } from '@ethersproject/providers'
 import * as IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import * as IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
 
@@ -13,10 +14,10 @@ export const UniswapRouterAddress = '0xf164fC0Ec4E93095b804a4795bBe1e041497b92a'
  * @param networkName    Name of the ethereum network to target.
  * @param inputToken     Address of the token to sell.
  * @param outputToken    Address of the token to buy.
- * @param amount  String representation of the amount of tokens to buy or sell.
- * @param exactInput Boolean true if sell order, false if buy order.
- * @param number maxSlippage    Maximum number of basis points of price slippage to be tolerated.
- * @param number maxDelay       Maximum number of seconds swap can sit in mempool.
+ * @param amount         String representation of the amount of tokens to buy or sell.
+ * @param exactInput     Boolean true if sell order, false if buy order.
+ * @param maxSlippage    Maximum number of basis points of price slippage to be tolerated.
+ * @param maxDelay       Maximum number of seconds swap can sit in mempool.
  *
  * @return  Returns object with `amountIn`, `amountOut`, `path`, and `deadline` parameters to use on swap.
  */
@@ -111,8 +112,8 @@ export async function getSwapParams(
  * @param recipient      Address of the account to receive the tokens.
  * @param inputToken     Address of the token to sell.
  * @param outputToken    Address of the token to buy.
- * @param amount  String representation of the amount of tokens to buy or sell.
- * @param exactInput Boolean true if sell order, false if buy order.
+ * @param amount         String representation of the amount of tokens to buy or sell.
+ * @param exactInput     Boolean true if sell order, false if buy order.
  * @param maxSlippage    Maximum number of basis points of price slippage to be tolerated.
  * @param maxDelay       Maximum number of seconds swap can sit in mempool.
  *
@@ -127,7 +128,7 @@ export async function swapTokens(
   exactInput: boolean,
   maxSlippage = 100,
   maxDelay = 60 * 2,
-) {
+): Promise<TransactionReceipt> {
   // get network object
   const network = await ethersSigner.provider?.getNetwork()
 
