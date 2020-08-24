@@ -21,7 +21,7 @@ export const UniswapRouterAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
  * @param inputToken     Address of the token to sell.
  * @param outputToken    Address of the token to buy.
  * @param amount         String representation of the amount of tokens to buy or sell.
- * @param exactInput     Boolean true if sell order, false if buy order.
+ * @param isSellOrder    Boolean true if sell order, false if buy order.
  * @param maxSlippage    Maximum number of basis points of price slippage to be tolerated.
  * @param maxDelay       Maximum number of seconds swap can sit in mempool.
  *
@@ -32,7 +32,7 @@ export async function getSwapParams(
   inputToken: string,
   outputToken: string,
   amount: string,
-  exactInput: boolean,
+  isSellOrder: boolean,
   maxSlippage = 100,
   maxDelay = 60 * 2,
 ): Promise<{
@@ -83,7 +83,7 @@ export async function getSwapParams(
 
   // format amount
   let inputAmount, outputAmount
-  if (exactInput) {
+  if (isSellOrder) {
     inputAmount = ethers.utils.parseUnits(amount, inputDecimals)
   } else {
     outputAmount = ethers.utils.parseUnits(amount, outputDecimals)
@@ -97,12 +97,12 @@ export async function getSwapParams(
   const deadline = currentTimestamp + maxDelay
 
   // get expected amount
-  const expectedAmount = exactInput
+  const expectedAmount = isSellOrder
     ? (await UniswapRouter.getAmountsOut(inputAmount, path))[1]
     : (await UniswapRouter.getAmountsIn(outputAmount, path))[0]
 
   // set safety amount
-  const safetyAmount = exactInput
+  const safetyAmount = isSellOrder
     ? expectedAmount.mul(
         ethers.BigNumber.from(1).sub(
           ethers.BigNumber.from(maxSlippage).div(10000),
@@ -126,7 +126,7 @@ export async function getSwapParams(
 
   let reserve0Post
   let reserve1Post
-  if (exactInput) {
+  if (isSellOrder) {
     reserve0Post = inputIs0
       ? reserve0.add(inputAmount)
       : reserve0.sub(expectedAmount)
@@ -155,8 +155,8 @@ export async function getSwapParams(
     .toString()
 
   const params = {
-    amountIn: exactInput ? inputAmount : safetyAmount,
-    amountOut: exactInput ? safetyAmount : outputAmount,
+    amountIn: isSellOrder ? inputAmount : safetyAmount,
+    amountOut: isSellOrder ? safetyAmount : outputAmount,
     expectedAmount,
     expectedSlippage,
     path,
@@ -178,7 +178,7 @@ export async function getSwapParams(
  * @param inputToken     Address of the token to sell.
  * @param outputToken    Address of the token to buy.
  * @param amount         String representation of the amount of tokens to buy or sell.
- * @param exactInput     Boolean true if sell order, false if buy order.
+ * @param isSellOrder    Boolean true if sell order, false if buy order.
  * @param maxSlippage    Maximum number of basis points of price slippage to be tolerated.
  * @param maxDelay       Maximum number of seconds swap can sit in mempool.
  *
@@ -190,7 +190,7 @@ export async function swapTokens(
   inputToken: string,
   outputToken: string,
   amount: string,
-  exactInput: boolean,
+  isSellOrder: boolean,
   maxSlippage = 100,
   maxDelay = 60 * 2,
 ): Promise<TransactionReceipt> {
@@ -203,7 +203,7 @@ export async function swapTokens(
     inputToken,
     outputToken,
     amount,
-    exactInput,
+    isSellOrder,
     maxSlippage,
     maxDelay,
   )
@@ -239,7 +239,7 @@ export async function swapTokens(
   }
 
   // perform swap
-  const swapTx = await (exactInput
+  const swapTx = await (isSellOrder
     ? await UniswapRouter.swapExactTokensForTokens(
         amountIn,
         amountOut,
