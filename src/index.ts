@@ -1,4 +1,5 @@
 import { Signer, ethers } from 'ethers'
+import { Provider } from '@ethersproject/providers'
 import { TransactionReceipt } from '@ethersproject/providers'
 import * as IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import * as IUniswapV2Router from '@uniswap/v2-periphery/build/IUniswapV2Router02.json'
@@ -16,25 +17,17 @@ export const UniswapRouterAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
  *
  * Calculates price based on current price on the contracts.
  * Only supports direct erc20 token pairs with a decimals getters.
- *
- * @param networkName    Name of the ethereum network to target.
- * @param inputToken     Address of the token to sell.
- * @param outputToken    Address of the token to buy.
- * @param amount         String representation of the amount of tokens to buy or sell.
- * @param isSellOrder    Boolean true if sell order, false if buy order.
- * @param maxSlippage    Maximum number of basis points of price slippage to be tolerated.
- * @param maxDelay       Maximum number of seconds swap can sit in mempool.
- *
- * @return  Returns object with `amountIn`, `amountOut`, `path`, and `deadline` parameters to use on swap.
  */
 export async function getSwapParams(
-  networkName: string,
   inputToken: string,
   outputToken: string,
   amount: string,
   isSellOrder: boolean,
-  maxSlippage = 100,
-  maxDelay = 60 * 2,
+  {
+    maxSlippage = 100,
+    maxDelay = 60 * 2,
+    ethersProvider = ethers.getDefaultProvider() as Provider,
+  },
 ): Promise<{
   amountIn: string
   amountOut: string
@@ -44,7 +37,7 @@ export async function getSwapParams(
   deadline: number
 }> {
   // get provider
-  const provider = ethers.getDefaultProvider(networkName)
+  const provider = ethersProvider
 
   // format addresses
   inputToken = ethers.utils.getAddress(inputToken)
@@ -172,40 +165,29 @@ export async function getSwapParams(
  *
  * Calculates price based on current price on the contracts.
  * Only supports direct erc20 token pairs with a decimals getters.
- *
- * @param ethersSigner   Ethers.js signer to use for performing transactions.
- * @param recipient      Address of the account to receive the tokens.
- * @param inputToken     Address of the token to sell.
- * @param outputToken    Address of the token to buy.
- * @param amount         String representation of the amount of tokens to buy or sell.
- * @param isSellOrder    Boolean true if sell order, false if buy order.
- * @param maxSlippage    Maximum number of basis points of price slippage to be tolerated.
- * @param maxDelay       Maximum number of seconds swap can sit in mempool.
- *
- * @return Returns object with `amountIn`, `amountOut`, `path`, and `deadline` parameters to use on swap.
  */
 export async function swapTokens(
   ethersSigner: Signer,
-  recipient: string,
   inputToken: string,
   outputToken: string,
   amount: string,
   isSellOrder: boolean,
-  maxSlippage = 100,
-  maxDelay = 60 * 2,
+  { recipient = '', maxSlippage = 100, maxDelay = 60 * 2 },
 ): Promise<TransactionReceipt> {
-  // get network object
-  const network = await ethersSigner.provider?.getNetwork()
+  // resolve recipient
+  recipient = recipient === '' ? await ethersSigner.getAddress() : recipient
 
   // get swap params
   const { amountIn, amountOut, path, deadline } = await getSwapParams(
-    network?.name || '',
     inputToken,
     outputToken,
     amount,
     isSellOrder,
-    maxSlippage,
-    maxDelay,
+    {
+      maxSlippage,
+      maxDelay,
+      ethersProvider: ethersSigner.provider,
+    },
   )
 
   // format addresses
